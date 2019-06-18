@@ -36,6 +36,7 @@ class Circle(Shape):
         super().__init__('Circle')
         self._cached = True
         self._baseCenter = asfarray(center)
+        self._center = self._baseCenter
         self._radius = radius
         self._boundingBox = (center[0] - radius, center[1] - radius,
                              center[0] + radius, center[1] + radius)
@@ -43,9 +44,11 @@ class Circle(Shape):
 
     def translate(self, vector):
         self._translation += vector
+        self._cached = False
 
     def translate_absolute(self, vector):
         self._translation = vector
+        self._cached = False
 
     def rotate(self, radians):
         c = math.cos(radians)
@@ -79,6 +82,7 @@ class Circle(Shape):
             self._generate()
 
         return self._center
+
     def _generate(self):
         self._center = self._baseCenter @ self._rotation + self._translation
         self._boundingBox = (self._center[0] - self._radius, self._center[1] - self._radius,
@@ -88,8 +92,8 @@ class Circle(Shape):
 
     radius = property(get_radius)
     shape = property(get_shape)
-    boundingBox = property(get_bounding_box)
     center = property(get_center)
+    boundingBox = property(get_bounding_box)
 
 
 class Polygon(Shape):
@@ -165,10 +169,10 @@ class Polygon(Shape):
         self._cached = True
 
     def intersect(self, shape):
-        if shape.boundingBox[0] < self.boundingBox[2] \
-                and shape.boundingBox[2] > self.boundingBox[0] \
-                and shape.boundingBox[1] < self.boundingBox[3] \
-                and shape.boundingBox[3] > self.boundingBox[1]:
+        if shape.boundingBox[0] <= self.boundingBox[2] \
+                and shape.boundingBox[2] >= self.boundingBox[0] \
+                and shape.boundingBox[1] <= self.boundingBox[3] \
+                and shape.boundingBox[3] >= self.boundingBox[1]:
             if shape.type == 'Polygon':
                 shape: Polygon
 
@@ -196,15 +200,15 @@ class Polygon(Shape):
                 best_point_index = None
                 normal = None
 
-                best_point_dist = inf
+                best_point_dist = 100000
                 for index, point in enumerate(self.shape):
-                    dist = point * shape.center
+                    dist = linalg.norm(point - shape.center)
                     if dist < best_point_dist:
                         best_point_dist = dist
                         best_point_index = index
 
                 line1 = (self.shape[best_point_index], self.shape[(best_point_index+1) % len(self.shape)])
-                line2 = (self.shape[best_point_index], self.shape[(best_point_index+1) % len(self.shape)])
+                line2 = (self.shape[(best_point_index-1) % len(self.shape)], self.shape[best_point_index])
                 line1_vector = line1[0] - line1[1]
                 line2_vector = line2[0] - line2[1]
 
@@ -252,3 +256,7 @@ def get_normals(points):  # points is the vertices of a polygon in clockwise ord
         ret[ind] = vec / linalg.norm(vec)
 
     return ret
+
+re = Rectangle((0,0,10,10))
+cir = Circle((15,5), 5)
+re.intersect(cir)
