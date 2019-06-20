@@ -204,34 +204,30 @@ class Polygon(Shape):
                 for index, point in enumerate(self.shape):
                     dist = linalg.norm(point - shape.center)
                     if dist < best_point_dist:
-                        best_point_dist = dist
                         best_point_index = index
+                        best_point_dist = dist
+                        normal = (point - shape.center) / dist
 
                 line1 = (self.shape[best_point_index], self.shape[(best_point_index+1) % len(self.shape)])
                 line2 = (self.shape[(best_point_index-1) % len(self.shape)], self.shape[best_point_index])
                 line1_vector = line1[0] - line1[1]
                 line2_vector = line2[0] - line2[1]
 
-                if line1[0] * line1_vector < shape.center * line1_vector < line1[1] * line1_vector:
-                    line1_vector = asfarray(line1_vector[1], -line1_vector[0]) / linalg.norm(line1_vector)
-                    dist = line1_vector * line1[0] - line1_vector * shape.center
+                if line1[0].dot(line1_vector) > shape.center.dot(line1_vector) > line1[1].dot(line1_vector):
+                    line1_vector = asfarray([line1_vector[1], -line1_vector[0]]) / linalg.norm(line1_vector)
+                    dist = line1_vector.dot(line1[0]) - line1_vector.dot(shape.center)
                     if dist < best_point_dist:
                         normal = line1_vector
                         best_point_dist = dist
 
-                if line2[0] * line2_vector < shape.center * line2_vector < line2[1] * line2_vector:
-                    line2_vector = asfarray(line2_vector[1], -line2_vector[0]) / linalg.norm(line2_vector)
-                    dist = line2_vector * line2[0] - line2_vector * shape.center
+                if line2[0].dot(line2_vector) > shape.center.dot(line2_vector) > line2[1].dot(line2_vector):
+                    line2_vector = asfarray([line2_vector[1], -line2_vector[0]]) / linalg.norm(line2_vector)
+                    dist = line2_vector.dot(line2[0]) - line2_vector.dot(shape.center)
                     if dist < best_point_dist:
                         normal = line2_vector
                         best_point_dist = dist
 
-                dist = linalg.norm(self.shape[best_point_index] - shape.center)
-                if dist < best_point_dist:
-                    normal = self.shape[best_point_index] - shape.center / dist
-                    best_point_dist = dist
-
-                return normal, best_point_dist
+                return best_point_dist - shape.radius, normal
 
         return False, None
 
@@ -257,6 +253,4 @@ def get_normals(points):  # points is the vertices of a polygon in clockwise ord
 
     return ret
 
-re = Rectangle((0,0,10,10))
-cir = Circle((15,5), 5)
-re.intersect(cir)
+

@@ -13,6 +13,15 @@ class Platform(ABC):
         pass
 
 
+class CirclePlatform(Platform):
+    def __init__(self, center, radius):
+        self.shape = Circle(center, radius)
+        super().__init__(self.shape.boundingBox)
+
+    def draw(self, screen):
+        draw.circle(screen, (255, 255, 255), self.shape.center.astype(int), self.shape.radius)
+
+
 class PolygonPlatform(Platform):
     def __init__(self, polygon):
         self.shape = Polygon(polygon)
