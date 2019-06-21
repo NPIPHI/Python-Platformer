@@ -3,9 +3,10 @@ from pygame import draw
 
 
 class Platform(ABC):
-    def __init__(self, shape):
-        self.boundingBox = shape.boundingBox
+    def __init__(self, shape, offset):
         self.shape = shape
+        self.shape.translate_absolute(asfarray(offset))
+        self.boundingBox = shape.boundingBox
 
     def intersect(self, shape):
         pass
@@ -27,32 +28,32 @@ class Platform(ABC):
 
 
 class CirclePlatform(Platform):
-    def __init__(self, center, radius):
-        super().__init__(Circle(center, radius))
+    def __init__(self, center, radius, offset=(0, 0)):
+        super().__init__(Circle(center, radius), offset)
 
     def draw(self, screen):
         draw.circle(screen, (255, 255, 255), self.shape.center.astype(int), self.shape.radius)
 
 
 class PolygonPlatform(Platform):
-    def __init__(self, polygon):
-        super().__init__(Polygon(polygon))
+    def __init__(self, polygon, offset=0):
+        super().__init__(Polygon(polygon), offset)
 
     def draw(self, screen):
         draw.polygon(screen, (255, 255, 255), self.shape.shape)
 
 
 class RectanglePlatform(Platform):
-    def __init__(self, rect):
-        super().__init__(Rectangle(rect))
+    def __init__(self, rect, offset=(0,0)):
+        super().__init__(Rectangle(rect), offset)
 
     def draw(self, screen):
         draw.polygon(screen, (255, 255, 255), self.shape.shape)
 
 
 class ComboPlatform(Platform):
-    def __init__(self, shapes):
-        super().__init__(ComboShape(list(map(chose_shape, shapes))))
+    def __init__(self, shapes, offset=(0,0)):
+        super().__init__(ComboShape(list(map(chose_shape, shapes))), offset)
 
     def draw(self, screen):
         for shape in self.shape.shapes:

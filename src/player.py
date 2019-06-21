@@ -3,12 +3,13 @@ from keyboard import default_keymap
 from numpy import array
 from pygame import draw
 from shape import *
+import math
 
-up = 'w'
-down = 's'
-left = 'a'
-right = 'd'
-jump = ' '
+UP = 'w'
+DOWN = 's'
+LEFT = 'a'
+RIGHT = 'd'
+JUMP = ' '
 gravityArrow = asfarray([[0, 0], [1, 0], [1, 2], [1.5, 2], [0.5, 3], [-0.5, 2], [0, 2]])
 
 
@@ -30,7 +31,10 @@ class Player(Entity):
         self.groundMinVerticalNormal = 0.5
         self.wallMinVerticalNormal = -0.1
         self.gravityRotation = 0
+        self.rotationAngle = 0
         self.frictionless = False  # use to apply force to player in high friction states
+        self.surfaceCling = False  # weather the player should cling to the clingId surface
+        self.clingId = 0
 
     def update(self, platforms):
         self.calc_movement()
@@ -49,12 +53,6 @@ class Player(Entity):
             else:
                 self.gravityRotation -= math.pi/2
 
-            c = math.cos(self.gravityRotation)
-            s = math.sin(self.gravityRotation)
-            self.gravityTransform = asfarray([[c, -s], [s, c]])
-            self.gravity = self.baseGravity @ self.gravityTransform
-            self.gravityNormal = asfarray([self.gravity[1], -self.gravity[0]])
-
         self.frictionless = False
         self.grounded = False
         self.wallRide = False
@@ -66,9 +64,14 @@ class Player(Entity):
     def calc_intersects(self, platforms):
         for plat in platforms:
             plat.shape: Shape
-            inter = self.shape.intersect(plat.shape)
+            cling = False
+            if self.surfaceCling:
+                if self.clingId == id(plat):
+                    cling = True
+
+            inter = self.shape.intersect(plat.shape, cling)
             if inter[0]:
-                if inter[0] <= 0:
+                if inter[0] <= 0 or cling:
                     self.pos -= inter[0] * inter[1]
                     self.velocity -= (inter[1] * (self.velocity @ inter[1]))
                     if -inter[1] @ self.gravity > self.groundMinVerticalNormal:
@@ -81,30 +84,50 @@ class Player(Entity):
 
                     self.shape.translate_absolute(self.pos)
 
+                    if inter[1][0] == 0:
+                        self.rotationAngle = 0
+                    else:
+                        self.rotationAngle = math.atan(inter[1][1]/inter[1][0])
+
+                    self.rotationAngle += math.pi/2
+                    
+                    if inter[1][1] < 0:
+                        self.rotationAngle *= -1
+                    self.shape.rotate_absolute(self.rotationAngle)
+                    if cling:
+                        self.set_gravity(self.rotationAngle)
+
     def calc_movement(self):
-        movVector = asfarray([0,0])
-        if self.keyMap[left]:
-            movVector[0] -= 1
+        mov_vector = asfarray([0,0])
+        if self.keyMap[LEFT]:
+            mov_vector[0] -= 1
 
-        if self.keyMap[right]:
-            movVector[0] += 1
+        if self.keyMap[RIGHT]:
+            mov_vector[0] += 1
 
-        if self.keyMap[up]:
-            movVector[1] -= 1
+        if self.keyMap[UP]:
+            mov_vector[1] -= 1
 
-        if self.keyMap[down]:
-            movVector[1] += 1
+        if self.keyMap[DOWN]:
+            mov_vector[1] += 1
 
-        self.velocity += self.gravityNormal * movVector[0] * self.acceleration
+        self.velocity += self.gravityNormal * mov_vector[0] * self.acceleration
 
-        if self.keyMap.get_toggle(jump) and self.grounded:
+        if self.keyMap.get_toggle(JUMP) and self.grounded:
             self.velocity -= self.gravity * 30
+            self.surfaceCling = False
 
-        elif self.keyMap.get_toggle(jump) and self.wallRide:
+        elif self.keyMap.get_toggle(JUMP) and self.wallRide:
             self.velocity += self.wallNormal * 20
             self.velocity -= self.gravity * 30
             self.frictionless = True
 
+    def set_gravity(self, radians):
+        c = math.cos(radians)
+        s = math.sin(radians)
+        self.gravityTransform = asfarray([[c, -s], [s, c]])
+        self.gravity = self.baseGravity @ self.gravityTransform
+        self.gravityNormal = asfarray([self.gravity[1], -self.gravity[0]])
 
     def __str__(self):
         return "Player at {} with velocity {}".format(self.pos, self.velocity)
@@ -112,3 +135,8 @@ class Player(Entity):
     def draw(self, screen):
         draw.polygon(screen, (255, 255, 0), self.shape.shape)
         draw.polygon(screen, (255, 0, 0), gravityArrow @ self.gravityTransform * 50 + asfarray([500, 100]))
+
+    def set_cling_id(self, clingId):
+        self.clingId = clingId
+        self.surfaceCling = True
+

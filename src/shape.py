@@ -18,7 +18,7 @@ class Shape(ABC):
     def translate(self, vector):
         pass
 
-    def intersect(self, shape):
+    def intersect(self, shape, cling):
         pass
 
     def rotate_absolute(self, radians):
@@ -169,11 +169,12 @@ class Polygon(Shape):
         self._minOnNormals = einsum('ij, ij->i', self._cachedShape, self._normals)
         self._cached = True
 
-    def intersect(self, shape):
-        if shape.boundingBox[0] <= self.boundingBox[2] \
-                and shape.boundingBox[2] >= self.boundingBox[0] \
-                and shape.boundingBox[1] <= self.boundingBox[3] \
-                and shape.boundingBox[3] >= self.boundingBox[1]:
+    def intersect(self, shape, cling):
+        if (shape.boundingBox[0] <= self.boundingBox[2]
+                and shape.boundingBox[2] >= self.boundingBox[0]
+                and shape.boundingBox[1] <= self.boundingBox[3]
+                and shape.boundingBox[3] >= self.boundingBox[1]) \
+                or cling:
             if shape.type == 'Polygon':
                 shape: Polygon
 
@@ -234,7 +235,7 @@ class Polygon(Shape):
                 best_dist = 100000
                 normal = None
                 for shape in shape.shapes:
-                    ret = self.intersect(shape)
+                    ret = self.intersect(shape, cling)
                     if ret[0] < best_dist:
                         best_dist = ret[0]
                         normal = ret[1]

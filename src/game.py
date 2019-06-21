@@ -8,15 +8,15 @@ platforms = list()
 platforms.append(RectanglePlatform((0, 0, 100, 1100)))
 platforms.append(RectanglePlatform((0, 1000, 2000, 100)))
 platforms.append(RectanglePlatform((1900, 0, 100, 1100)))
-platforms.append(PolygonPlatform(((500, 500), (750, 250), (1000, 500))))
-platforms.append(ComboPlatform([(200, 800, 100, 100), ((300, 850), 50)]))
+platforms.append(RectanglePlatform((500, 800, 300, 20)))
+platforms.append(ComboPlatform([((0, 0), 400)], (100, 900)))
+entities[0].set_cling_id(id(platforms[-1]))
 
 
 def game_loop():
     for e in entities:
         e.update(platforms)
 
-    platforms[-1].translate((0.5,0))
 
 def game_draw(screen):
     for e in entities:
