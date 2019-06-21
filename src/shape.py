@@ -41,6 +41,7 @@ class Circle(Shape):
         self._boundingBox = (center[0] - radius, center[1] - radius,
                              center[0] + radius, center[1] + radius)
         self._rotation = asfarray([[1, 0], [0, 1]])
+        self._translation = asfarray([0,0])
 
     def translate(self, vector):
         self._translation += vector
@@ -53,7 +54,7 @@ class Circle(Shape):
     def rotate(self, radians):
         c = math.cos(radians)
         s = math.sin(radians)
-        self._rotation = self.rotate @ asfarray([[c, -s], [s, c]])
+        self._rotation = self._rotation @ asfarray([[c, -s], [s, c]])
         self._cached = False
 
     def rotate_absolute(self, radians):
@@ -229,6 +230,18 @@ class Polygon(Shape):
 
                 return best_point_dist - shape.radius, normal
 
+            if shape.type == 'Combo':
+                best_dist = 100000
+                normal = None
+                for shape in shape.shapes:
+                    ret = self.intersect(shape)
+                    if ret[0] < best_dist:
+                        best_dist = ret[0]
+                        normal = ret[1]
+
+                if best_dist != 100000:
+                    return best_dist, normal
+
         return False, None
 
     normals = property(get_normals)
@@ -244,6 +257,51 @@ class Rectangle(Polygon):
                           (rect[0] + rect[2], rect[1] + rect[3]), (rect[0], rect[1] + rect[3])))
 
 
+class ComboShape(Shape):
+    def __init__(self, shapes):
+        super().__init__('Combo')
+        self.shapes = shapes
+        self._cached = False
+
+    def translate(self, vector):
+        for shp in self.shapes:
+            shp.translate(vector)
+
+        self._cached = False
+
+    def translate_absolute(self, vector):
+        for shp in self.shapes:
+            shp.translate_absolute(vector)
+
+        self._cached = False
+
+    def rotate(self, radians):
+        for shp in self.shapes:
+            shp.rotate(radians)
+
+        self._cached = False
+
+    def rotate_absolute(self, radians):
+        for shp in self.shapes:
+            shp.rotate_absolute(radians)
+
+        self._cached = False
+
+    def get_bounding_box(self):
+        if not self._cached:
+            self._generate()
+
+        return self._boundingBox
+
+    def _generate(self):
+        sub_bounding_boxes = asfarray([shp.boundingBox for shp in self.shapes])
+        self._boundingBox = (sub_bounding_boxes[:, 0].min(), sub_bounding_boxes[:, 1].min(),
+                             sub_bounding_boxes[:, 2].max(), sub_bounding_boxes[:, 3].max())
+        self._cached = True
+
+    boundingBox = property(get_bounding_box)
+
+
 def get_normals(points):  # points is the vertices of a polygon in clockwise order
     ret = ndarray(shape=(len(points), 2), dtype=float)
     for ind in range(len(points)):
@@ -253,4 +311,13 @@ def get_normals(points):  # points is the vertices of a polygon in clockwise ord
 
     return ret
 
+
+def chose_shape(shape):
+    if len(shape) == 4:
+        return Rectangle(shape)
+    elif type(shape[1]) == int:
+        return Circle(shape[0], shape[1])
+
+    else:
+        return Polygon(shape)
 

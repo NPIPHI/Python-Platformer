@@ -1,8 +1,5 @@
-import pygame
 from game import game_loop, game_draw
 from keyboard import *
-import time
-from player import Player
 
 
 import os
@@ -13,6 +10,9 @@ pygame.init()
 screen = pygame.display.set_mode((1920-90, 1080-30), pygame.HWSURFACE | pygame.DOUBLEBUF)
 pygame.display.set_caption("Basic Platformer")
 clock = pygame.time.Clock()
+
+
+fps = 30
 
 
 def main():
@@ -32,8 +32,8 @@ def main():
         game_loop()
         game_draw(screen)
         pygame.display.flip()
-        clock.tick(120)
-        if frame_count % 60 == 0:
+        clock.tick(fps)
+        if frame_count % fps == 0:
             print(clock.get_fps())
 
 

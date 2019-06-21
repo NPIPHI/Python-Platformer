@@ -18,10 +18,11 @@ class Player(Entity):
         self.pos = array([x, y], dtype=float)
         self.velocity = array([0, 0], dtype=float)
         self.acceleration = acceleration
-        self.shape = Rectangle((-50, -10, 100, 20))
+        self.shape = Rectangle((-20, -20, 40, 40))
         self.grounded = False
         self.wallRide = False
         self.wallNormal = None
+        self.canWallCling = False
         self.baseGravity = asfarray([0, 1])
         self.gravity = self.baseGravity
         self.gravityNormal = asfarray([self.baseGravity[1], -self.baseGravity[0]])
@@ -74,7 +75,7 @@ class Player(Entity):
                         self.grounded = True
 
                     elif -inter[1] @ self.gravity >= self.wallMinVerticalNormal \
-                            and self.gravity @ self.velocity > 0:
+                            and self.gravity @ self.velocity > 0 and self.canWallCling:
                         self.wallRide = True
                         self.wallNormal = inter[1]
 
