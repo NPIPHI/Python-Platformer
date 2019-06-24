@@ -38,8 +38,8 @@ class Player(Entity):
 
     def update(self, platforms):
         self.calc_movement()
-        self.pos += self.velocity
         self.velocity += self.gravity
+        self.pos += self.velocity
 
         if not self.frictionless:
             if self.wallRide:
