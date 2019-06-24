@@ -1,6 +1,5 @@
 from game import game_loop, game_draw, set_screen_info
 from keyboard import *
-import time
 
 import os
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (90, 30)
@@ -33,7 +32,7 @@ def main():
         game_loop()
         game_draw(screen)
         pygame.display.flip()
-        clock.tick_busy_loop(fps)
+        clock.tick(fps)
         if frame_count % fps == 0:
             print(clock.get_fps())
 

@@ -99,28 +99,45 @@ class Circle(Shape):
 
 
 class InverseCircle(Shape):
-    def __init__(self, center, radius, exclude_polygon):
-        self._baseCenter = center
+    def __init__(self, exclude_center, radius, polygon):
+        self._baseCenter = asfarray(exclude_center)
         self._radius = radius
         self._rotation = asfarray([[1, 0], [0, 1]])
         self._translation = asfarray([0, 0])
-        self._baseExclude = exclude_polygon
-        self._cachedExclude = exclude_polygon
-        self._cachedCenter = center
+        pgon = asfarray(polygon)
+        if len(pgon.shape) == 1:  # test if a rectangle was entered
+            self._basePolygon = asfarray(construct_rectangle(pgon))
+
+        else:
+            self._basePolygon = pgon
+
+        self._cachedPolygon = self._basePolygon
+        self._cachedCenter = self._baseCenter
         self._cached = True
+        self._boundingBox = sum_bounding_box([((self._baseCenter[0] - radius), (self._baseCenter[1] - radius),
+                                               (self._baseCenter[0] + radius), (self._baseCenter[1] + radius)),
+                                              get_bounding_box(self._basePolygon)])
         super().__init__("Inverse")
 
     def translate_absolute(self, vector):
-        pass
+        self._translation = asfarray(vector)
+        self._cached = False
 
     def translate(self, vector):
-        pass
+        self._translation += asfarray(vector)
+        self._cached = False
 
     def rotate_absolute(self, radians):
-        pass
+        c = math.cos(radians)
+        s = math.sin(radians)
+        self._rotation = self._rotation @ asfarray([[c, -s], [s, c]])
+        self._cached = False
 
     def rotate(self, radians):
-        pass
+        c = math.cos(radians)
+        s = math.sin(radians)
+        self._rotation = self._rotation @ asfarray([[c, -s], [s, c]])
+        self._cached = False
 
     def get_bounding_box(self):
         if not self._cached:
@@ -134,21 +151,25 @@ class InverseCircle(Shape):
 
         return self._cachedCenter, self._radius
 
-    def get_exclude(self):
+    def get_polygon(self):
         if not self._cached:
             self._generate()
 
-        return self._cachedExclude
+        return self._cachedPolygon
 
     def _generate(self):
-        self._cachedCenter = self._baseCenter @ self._rotation
-        self._cachedExclude = self._baseExclude @ self._rotation
-        self._boundingBox = sum_bounding_box([])
+        self._cachedCenter = self._baseCenter @ self._rotation + self._translation
+        self._cachedPolygon = self._basePolygon @ self._rotation + self._translation
+        self._boundingBox = sum_bounding_box([((self._cachedCenter[0] - self._radius),
+                                               (self._cachedCenter[1] - self._radius),
+                                               (self._cachedCenter[0] + self._radius),
+                                               (self._cachedCenter[1] + self._radius)),
+                                              get_bounding_box(self._basePolygon)])
         self._cached = True
 
     boundingBox = property(get_bounding_box)
-    circle = property(get_circle)
-    excludePoly = property(get_exclude)
+    excludeCircle = property(get_circle)
+    polygon = property(get_polygon)
 
 
 class Polygon(Shape):
@@ -164,8 +185,7 @@ class Polygon(Shape):
         self._rotation = asfarray([[1, 0], [0, 1]])
         self._translation = asfarray([0, 0])
         self._cachedShape = self._baseShape
-        self._boundingBox = (self._baseShape[:, 0].min(), self._baseShape[:, 1].min(),
-                             self._baseShape[:, 0].max(), self._baseShape[:, 1].max())
+        self._boundingBox = get_bounding_box(self._baseShape)
         self._baseNormals = get_normals(self._baseShape)
         self._minOnNormals = einsum('ij, ij->i', self._baseShape, self._baseNormals)
         self._normals = self._baseNormals
@@ -297,6 +317,30 @@ class Polygon(Shape):
                 if best_dist != 100000:
                     return best_dist, normal
 
+            if shape.type == 'Inverse':
+                shape: InverseCircle
+                radius = shape.excludeCircle[1]
+                point_dists = linalg.norm(self.shape - shape.excludeCircle[0], axis=1)
+                if point_dists.max() < radius:
+                    return False, None
+
+                valid_points = list()
+                ejection = -1000000, None
+                for point in zip(self.shape, point_dists):
+                    if point[1] > radius:
+                        valid_points.append(point[0])
+                        if -point[1] > ejection[0]:
+                            ejection = -point[1] + radius, point[0] - shape.excludeCircle[0]
+
+
+                valid_points = asfarray(valid_points)
+                polyNormals = get_normals(shape.polygon)
+                for norm in polyNormals:
+                    if not (valid_points @ norm).min() < (shape.polygon @ norm).max():
+                        return False, None
+
+                return ejection[0], -ejection[1] / linalg.norm(ejection[1])
+
         return False, None
 
     normals = property(get_normals)
@@ -379,6 +423,16 @@ def sum_bounding_box(boxes):
     sub_bounding_boxes = asfarray(boxes)
     return (sub_bounding_boxes[:, 0].min(), sub_bounding_boxes[:, 1].min(),
             sub_bounding_boxes[:, 2].max(), sub_bounding_boxes[:, 3].max())
+
+
+def get_bounding_box(point_array):
+    return (point_array[:, 0].min(), point_array[:, 1].min(),
+            point_array[:, 0].max(), point_array[:, 1].max())
+
+
+def construct_rectangle(rect):
+    return ((rect[0], rect[1]), (rect[0] + rect[2], rect[1]),
+            (rect[0] + rect[2], rect[1] + rect[3]), (rect[0], rect[1] + rect[3]))
 
 
 def contain(box_a, box_b):

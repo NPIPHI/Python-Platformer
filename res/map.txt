@@ -1,0 +1,4 @@
+RectanglePlatform((0, 0, 100, 1100))
+RectanglePlatform((0, 1000, 2000, 100))
+RectanglePlatform((500, 800, 300, 20))
+PolygonPlatform(((2000, 1000), (3000, 1500), (3000, 1600), (2000, 1100)))

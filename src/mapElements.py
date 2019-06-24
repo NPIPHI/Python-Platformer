@@ -66,3 +66,14 @@ class ComboPlatform(Platform):
                     draw.polygon(screen, (255, 255, 255), shape.shape - screen_box[0:2])
                 if shape.type == 'Rectangle':
                     draw.polygon(screen, (255, 255, 255), shape.shape - screen_box[0:2])
+
+
+class InverseCirclePlatform(Platform):
+    def __init__(self, exclude_circle_center, exclude_circle_radius, polygon, offset=(0, 0)):
+        super().__init__(InverseCircle(exclude_circle_center, exclude_circle_radius, polygon), offset)
+
+    def draw(self, screen, screen_box):
+        if contain(self.boundingBox, screen_box):
+            draw.polygon(screen, (255, 255, 255), self.shape.polygon - screen_box[0:2])
+            draw.circle(screen, (0, 0, 0), self.shape.excludeCircle[0].astype(int) - screen_box[0:2],
+                        int(self.shape.excludeCircle[1]))

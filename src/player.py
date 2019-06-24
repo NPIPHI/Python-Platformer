@@ -1,6 +1,6 @@
 from entity import Entity
 from keyboard import default_keymap
-from numpy import array
+from numpy import array, linalg
 from pygame import draw
 from shape import *
 import math
@@ -38,8 +38,9 @@ class Player(Entity):
 
     def update(self, platforms):
         self.calc_movement()
-        self.velocity += self.gravity
         self.pos += self.velocity
+        self.velocity += self.gravity
+
         if not self.frictionless:
             if self.wallRide:
                 self.velocity *= 0.20
@@ -73,11 +74,19 @@ class Player(Entity):
             if inter[0]:
                 if inter[0] <= 0 or cling:
                     self.pos -= inter[0] * inter[1]
-                    self.velocity -= (inter[1] * (self.velocity @ inter[1]))
+                    velMag = linalg.norm(self.velocity)
+
+                    self.velocity -= inter[1] * (self.velocity @ inter[1])
+
+                    if abs(self.velocity @ inter[1]) < velMag * 0.1:
+                        if linalg.norm(self.velocity) > 0.1:
+                            self.velocity /= linalg.norm(self.velocity)
+                            self.velocity *= velMag
+
                     if -inter[1] @ self.gravity > self.groundMinVerticalNormal:
                         self.grounded = True
 
-                    elif -inter[1] @ self.gravity >= self.wallMinVerticalNormal \
+                    if -inter[1] @ self.gravity >= self.wallMinVerticalNormal \
                             and self.gravity @ self.velocity > 0 and self.canWallCling:
                         self.wallRide = True
                         self.wallNormal = inter[1]
@@ -135,7 +144,7 @@ class Player(Entity):
 
     def draw(self, screen, screen_box):
         draw.polygon(screen, (255, 255, 0), self.shape.shape - screen_box[0:2])
-        draw.polygon(screen, (255, 0, 0), gravityArrow @ self.gravityTransform * 50 + asfarray([500, 100]))
+        draw.polygon(screen, (0, 255, 0) if self.grounded else (255, 0, 0), gravityArrow @ self.gravityTransform * 50 + asfarray([500, 100]))
 
     def set_cling_id(self, cling_id):
         self.clingId = cling_id
