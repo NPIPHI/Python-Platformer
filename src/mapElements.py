@@ -8,10 +8,8 @@ class Platform(ABC):
         self.shape.translate_absolute(asfarray(offset))
         self.boundingBox = shape.boundingBox
 
-    def intersect(self, shape):
-        pass
-
-    def draw(self, screen):
+    @abstractmethod
+    def draw(self, screen, screen_box):
         pass
 
     def translate(self, vector):
@@ -31,35 +29,40 @@ class CirclePlatform(Platform):
     def __init__(self, center, radius, offset=(0, 0)):
         super().__init__(Circle(center, radius), offset)
 
-    def draw(self, screen):
-        draw.circle(screen, (255, 255, 255), self.shape.center.astype(int), self.shape.radius)
+    def draw(self, screen, screen_box):
+        if contain(self.boundingBox, screen_box):
+            draw.circle(screen, (255, 255, 255), self.shape.center.astype(int) - screen_box[0:2],
+                        self.shape.radius)
 
 
 class PolygonPlatform(Platform):
     def __init__(self, polygon, offset=0):
         super().__init__(Polygon(polygon), offset)
 
-    def draw(self, screen):
-        draw.polygon(screen, (255, 255, 255), self.shape.shape)
+    def draw(self, screen, screen_box):
+        if contain(self.boundingBox, screen_box):
+            draw.polygon(screen, (255, 255, 255), self.shape.shape - screen_box[0:2])
 
 
 class RectanglePlatform(Platform):
-    def __init__(self, rect, offset=(0,0)):
+    def __init__(self, rect, offset=(0, 0)):
         super().__init__(Rectangle(rect), offset)
 
-    def draw(self, screen):
-        draw.polygon(screen, (255, 255, 255), self.shape.shape)
+    def draw(self, screen, screen_box):
+        draw.polygon(screen, (255, 255, 255), self.shape.shape - screen_box[0:2])
 
 
 class ComboPlatform(Platform):
-    def __init__(self, shapes, offset=(0,0)):
+    def __init__(self, shapes, offset=(0, 0)):
         super().__init__(ComboShape(list(map(chose_shape, shapes))), offset)
 
-    def draw(self, screen):
-        for shape in self.shape.shapes:
-            if shape.type == 'Circle':
-                draw.circle(screen, (255, 255, 255), shape.center.astype(int), shape.radius)
-            if shape.type == 'Polygon':
-                draw.polygon(screen, (255, 255, 255), shape.shape)
-            if shape.type == 'Rectangle':
-                draw.polygon(screen, (255, 255, 255), shape.shape)
+    def draw(self, screen, screen_box):
+        if contain(self.boundingBox, screen_box):
+            for shape in self.shape.shapes:
+                if shape.type == 'Circle':
+                    draw.circle(screen, (255, 255, 255), shape.center.astype(int) - screen_box[0:2],
+                                shape.radius)
+                if shape.type == 'Polygon':
+                    draw.polygon(screen, (255, 255, 255), shape.shape - screen_box[0:2])
+                if shape.type == 'Rectangle':
+                    draw.polygon(screen, (255, 255, 255), shape.shape - screen_box[0:2])

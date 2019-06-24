@@ -1,24 +1,25 @@
-from game import game_loop, game_draw
+from game import game_loop, game_draw, set_screen_info
 from keyboard import *
-
+import time
 
 import os
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (90, 30)
 del os
 
 pygame.init()
-screen = pygame.display.set_mode((1920-90, 1080-30), pygame.HWSURFACE | pygame.DOUBLEBUF)
+info = pygame.display.Info()
+screen = pygame.display.set_mode((info.current_w-90, info.current_h-30), pygame.HWSURFACE | pygame.DOUBLEBUF)
 pygame.display.set_caption("Basic Platformer")
 clock = pygame.time.Clock()
 
 
-fps = 30
+fps = 120
+set_screen_info(info.current_w, info.current_h)
 
 
 def main():
     done = False
     frame_count = 0
-
     while not done:
         kbrd.reset_toggle()
         for event in pygame.event.get():
@@ -32,10 +33,9 @@ def main():
         game_loop()
         game_draw(screen)
         pygame.display.flip()
-        clock.tick(fps)
+        clock.tick_busy_loop(fps)
         if frame_count % fps == 0:
             print(clock.get_fps())
-
 
 
 main()

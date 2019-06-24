@@ -1,5 +1,5 @@
-from abc import ABC
-from numpy import asfarray, ndarray, linalg, einsum, inf
+from abc import ABC, abstractmethod
+from numpy import asfarray, ndarray, linalg, einsum
 import math
 
 
@@ -12,18 +12,19 @@ class Shape(ABC):
     def __init__(self, dtype):
         self.type = dtype
 
+    @abstractmethod
     def rotate(self, radians):
         pass
 
+    @abstractmethod
     def translate(self, vector):
         pass
 
-    def intersect(self, shape, cling):
-        pass
-
+    @abstractmethod
     def rotate_absolute(self, radians):
         pass
 
+    @abstractmethod
     def translate_absolute(self, vector):
         pass
 
@@ -41,7 +42,7 @@ class Circle(Shape):
         self._boundingBox = (center[0] - radius, center[1] - radius,
                              center[0] + radius, center[1] + radius)
         self._rotation = asfarray([[1, 0], [0, 1]])
-        self._translation = asfarray([0,0])
+        self._translation = asfarray([0, 0])
 
     def translate(self, vector):
         self._translation += vector
@@ -95,6 +96,59 @@ class Circle(Shape):
     shape = property(get_shape)
     center = property(get_center)
     boundingBox = property(get_bounding_box)
+
+
+class InverseCircle(Shape):
+    def __init__(self, center, radius, exclude_polygon):
+        self._baseCenter = center
+        self._radius = radius
+        self._rotation = asfarray([[1, 0], [0, 1]])
+        self._translation = asfarray([0, 0])
+        self._baseExclude = exclude_polygon
+        self._cachedExclude = exclude_polygon
+        self._cachedCenter = center
+        self._cached = True
+        super().__init__("Inverse")
+
+    def translate_absolute(self, vector):
+        pass
+
+    def translate(self, vector):
+        pass
+
+    def rotate_absolute(self, radians):
+        pass
+
+    def rotate(self, radians):
+        pass
+
+    def get_bounding_box(self):
+        if not self._cached:
+            self._generate()
+
+        return self._boundingBox
+
+    def get_circle(self):
+        if not self._cached:
+            self._generate()
+
+        return self._cachedCenter, self._radius
+
+    def get_exclude(self):
+        if not self._cached:
+            self._generate()
+
+        return self._cachedExclude
+
+    def _generate(self):
+        self._cachedCenter = self._baseCenter @ self._rotation
+        self._cachedExclude = self._baseExclude @ self._rotation
+        self._boundingBox = sum_bounding_box([])
+        self._cached = True
+
+    boundingBox = property(get_bounding_box)
+    circle = property(get_circle)
+    excludePoly = property(get_exclude)
 
 
 class Polygon(Shape):
@@ -295,9 +349,7 @@ class ComboShape(Shape):
         return self._boundingBox
 
     def _generate(self):
-        sub_bounding_boxes = asfarray([shp.boundingBox for shp in self.shapes])
-        self._boundingBox = (sub_bounding_boxes[:, 0].min(), sub_bounding_boxes[:, 1].min(),
-                             sub_bounding_boxes[:, 2].max(), sub_bounding_boxes[:, 3].max())
+        self._boundingBox = sum_bounding_box([shp.boundingBox for shp in self.shapes])
         self._cached = True
 
     boundingBox = property(get_bounding_box)
@@ -322,3 +374,12 @@ def chose_shape(shape):
     else:
         return Polygon(shape)
 
+
+def sum_bounding_box(boxes):
+    sub_bounding_boxes = asfarray(boxes)
+    return (sub_bounding_boxes[:, 0].min(), sub_bounding_boxes[:, 1].min(),
+            sub_bounding_boxes[:, 2].max(), sub_bounding_boxes[:, 3].max())
+
+
+def contain(box_a, box_b):
+    return box_a[0] < box_b[2] and box_b[0] < box_a[2] and box_a[1] < box_b[3] and box_b[1] < box_a[3]

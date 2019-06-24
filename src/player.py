@@ -85,20 +85,21 @@ class Player(Entity):
                     self.shape.translate_absolute(self.pos)
 
                     if inter[1][0] == 0:
-                        self.rotationAngle = 0
+                        self.rotationAngle = -math.pi/2
                     else:
                         self.rotationAngle = math.atan(inter[1][1]/inter[1][0])
 
                     self.rotationAngle += math.pi/2
-                    
+
                     if inter[1][1] < 0:
                         self.rotationAngle *= -1
                     self.shape.rotate_absolute(self.rotationAngle)
+
                     if cling:
                         self.set_gravity(self.rotationAngle)
 
     def calc_movement(self):
-        mov_vector = asfarray([0,0])
+        mov_vector = asfarray([0, 0])
         if self.keyMap[LEFT]:
             mov_vector[0] -= 1
 
@@ -132,11 +133,10 @@ class Player(Entity):
     def __str__(self):
         return "Player at {} with velocity {}".format(self.pos, self.velocity)
 
-    def draw(self, screen):
-        draw.polygon(screen, (255, 255, 0), self.shape.shape)
+    def draw(self, screen, screen_box):
+        draw.polygon(screen, (255, 255, 0), self.shape.shape - screen_box[0:2])
         draw.polygon(screen, (255, 0, 0), gravityArrow @ self.gravityTransform * 50 + asfarray([500, 100]))
 
-    def set_cling_id(self, clingId):
-        self.clingId = clingId
+    def set_cling_id(self, cling_id):
+        self.clingId = cling_id
         self.surfaceCling = True
-
