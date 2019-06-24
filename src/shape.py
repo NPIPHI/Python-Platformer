@@ -336,9 +336,10 @@ class Polygon(Shape):
                 valid_points = asfarray(valid_points)
                 polyNormals = get_normals(shape.polygon)
                 for norm in polyNormals:
-                    if not (valid_points @ norm).min() < (shape.polygon @ norm).max():
+                    if not (valid_points @ norm).min() <= (shape.polygon @ norm).max():
                         return False, None
 
+                # TODO: correct normal calculation, dont' calc point normal
                 return ejection[0], -ejection[1] / linalg.norm(ejection[1])
 
         return False, None

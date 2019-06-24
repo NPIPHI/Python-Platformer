@@ -28,6 +28,7 @@ class Player(Entity):
         self.gravity = self.baseGravity
         self.gravityNormal = asfarray([self.baseGravity[1], -self.baseGravity[0]])
         self.gravityTransform = asfarray([[1, 0], [0, 1]])
+        self.groundNormal = asfarray([0, -1])
         self.groundMinVerticalNormal = 0.5
         self.wallMinVerticalNormal = -0.1
         self.gravityRotation = 0
@@ -35,17 +36,20 @@ class Player(Entity):
         self.frictionless = False  # use to apply force to player in high friction states
         self.surfaceCling = False  # weather the player should cling to the clingId surface
         self.clingId = 0
+        self.airDrag = 0.01
 
     def update(self, platforms):
         self.calc_movement()
         self.velocity += self.gravity
+        self.velocity -= self.groundNormal / 100
         self.pos += self.velocity
+        self.groundNormal = asfarray([0, -1])
 
         if not self.frictionless:
             if self.wallRide:
                 self.velocity *= 0.20
             else:
-                self.velocity *= 0.95
+                self.velocity *= 1 - self.airDrag
 
         self.shape.translate_absolute(self.pos)
         if self.keyMap.get_toggle('r'):
@@ -73,26 +77,28 @@ class Player(Entity):
             inter = self.shape.intersect(plat.shape, cling)
             if inter[0]:
                 if inter[0] <= 0 or cling:
+                    self.groundNormal = inter[1]
                     self.pos -= inter[0] * inter[1]
+
                     velMag = linalg.norm(self.velocity)
+                    velDelta = (self.velocity @ inter[1])
 
-                    self.velocity -= inter[1] * (self.velocity @ inter[1])
+                    self.velocity -= inter[1] * velDelta
 
-                    if abs(self.velocity @ inter[1]) < velMag * 0.1:
+                    if abs(velDelta)/velMag < 0.8:
                         if linalg.norm(self.velocity) > 0.1:
                             self.velocity /= linalg.norm(self.velocity)
                             self.velocity *= velMag
 
-                    if -inter[1] @ self.gravity > self.groundMinVerticalNormal:
+                    if inter[1] @ self.groundNormal > self.groundMinVerticalNormal:
                         self.grounded = True
 
-                    if -inter[1] @ self.gravity >= self.wallMinVerticalNormal \
+                    if -inter[1] @ self.groundNormal >= self.wallMinVerticalNormal \
                             and self.gravity @ self.velocity > 0 and self.canWallCling:
                         self.wallRide = True
                         self.wallNormal = inter[1]
 
                     self.shape.translate_absolute(self.pos)
-
                     if inter[1][0] == 0:
                         self.rotationAngle = -math.pi/2
                     else:
@@ -121,10 +127,11 @@ class Player(Entity):
         if self.keyMap[DOWN]:
             mov_vector[1] += 1
 
-        self.velocity += self.gravityNormal * mov_vector[0] * self.acceleration
+        groundTangent = asfarray([-self.groundNormal[1], self.groundNormal[0]])
+        self.velocity += groundTangent * mov_vector[0] * self.acceleration
 
         if self.keyMap.get_toggle(JUMP) and self.grounded:
-            self.velocity -= self.gravity * 30
+            self.velocity += self.groundNormal * 30
             self.surfaceCling = False
 
         elif self.keyMap.get_toggle(JUMP) and self.wallRide:

@@ -4,13 +4,17 @@ from numpy import asarray, array
 import mapLoader
 
 
-player1 = Player(x=500, y=500, acceleration=1)
+player1 = Player(x=500, y=500, acceleration=0.5)
 entities = list()
 entities.append(player1)
 
 platforms = list()
 platforms += mapLoader.load('Platformer/res/map.txt')
-platforms.append(InverseCirclePlatform((600, 800), 100, (600, 800, 100, 100), (500, 100)))
+platforms.append(InverseCirclePlatform((200, 900), 100, (100, 900, 100, 100)))
+platforms.append(InverseCirclePlatform((200, 100), 100, (100, 0, 100, 100)))
+platforms.append(InverseCirclePlatform((1200, 900), 100, (1200, 900, 100, 100)))
+platforms.append(InverseCirclePlatform((1200, 100), 100, (1200, 0, 100, 100)))
+platforms.append(RectanglePlatform((1300, 0, 100, 1000)))
 screenBox: array
 screenDim: array
 
