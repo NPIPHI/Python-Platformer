@@ -28,7 +28,7 @@ def game_loop():
 def game_draw(screen):
     set_screen_position(player1.pos)
     for p in platforms:
-        p.draw(screen, screenBox)
+        p.draw(screen, screenBox, (255, 255, 255))
 
     for e in entities:
         e.draw(screen, screenBox)
@@ -36,7 +36,10 @@ def game_draw(screen):
 
 def draw_map(screen):
     for p in platforms:
-        p.draw(screen, screenBox)
+        if p.stick:
+            p.draw(screen, screenBox, (255, 255, 255))
+        else:
+            p.draw(screen, screenBox, (128, 255, 255))
 
 
 def add_platform(platform):

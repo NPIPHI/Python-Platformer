@@ -1,5 +1,5 @@
 from shape import *
-from pygame import draw
+from pygame import draw, Surface
 
 
 class Platform(ABC):
@@ -10,7 +10,7 @@ class Platform(ABC):
         self.boundingBox = shape.boundingBox
 
     @abstractmethod
-    def draw(self, screen, screen_box):
+    def draw(self, screen, screen_box, color):
         pass
 
     def translate(self, vector):
@@ -30,9 +30,9 @@ class CirclePlatform(Platform):
     def __init__(self, center, radius, offset=(0, 0),  stick=False):
         super().__init__(Circle(center, radius), offset, stick)
 
-    def draw(self, screen, screen_box):
+    def draw(self, screen, screen_box, color):
         if contain(self.boundingBox, screen_box):
-            draw.circle(screen, (255, 255, 255), self.shape.center.astype(int) - screen_box[0:2],
+            draw.circle(screen, color, self.shape.center.astype(int) - screen_box[0:2],
                         self.shape.radius)
 
 
@@ -40,41 +40,46 @@ class PolygonPlatform(Platform):
     def __init__(self, polygon, offset=0, stick=False):
         super().__init__(Polygon(polygon), offset, stick)
 
-    def draw(self, screen, screen_box):
+    def draw(self, screen, screen_box, color):
         if contain(self.boundingBox, screen_box):
-            draw.polygon(screen, (255, 255, 255), self.shape.shape - screen_box[0:2])
+            draw.polygon(screen, color, self.shape.shape - screen_box[0:2])
 
 
 class RectanglePlatform(Platform):
     def __init__(self, rect, offset=(0, 0), stick=False):
         super().__init__(Rectangle(rect), offset, stick)
 
-    def draw(self, screen, screen_box):
-        draw.polygon(screen, (255, 255, 255), self.shape.shape - screen_box[0:2])
+    def draw(self, screen, screen_box, color):
+        draw.polygon(screen, color, self.shape.shape - screen_box[0:2])
 
 
 class ComboPlatform(Platform):
     def __init__(self, shapes, offset=(0, 0), stick=False):
         super().__init__(ComboShape(list(map(chose_shape, shapes))), offset, stick)
 
-    def draw(self, screen, screen_box):
+    def draw(self, screen, screen_box, color):
         if contain(self.boundingBox, screen_box):
             for shape in self.shape.shapes:
                 if shape.type == 'Circle':
-                    draw.circle(screen, (255, 255, 255), shape.center.astype(int) - screen_box[0:2],
+                    draw.circle(screen, color, shape.center.astype(int) - screen_box[0:2],
                                 shape.radius)
                 if shape.type == 'Polygon':
-                    draw.polygon(screen, (255, 255, 255), shape.shape - screen_box[0:2])
+                    draw.polygon(screen, color, shape.shape - screen_box[0:2])
                 if shape.type == 'Rectangle':
-                    draw.polygon(screen, (255, 255, 255), shape.shape - screen_box[0:2])
+                    draw.polygon(screen, color, shape.shape - screen_box[0:2])
 
 
 class InverseCirclePlatform(Platform):
     def __init__(self, exclude_circle_center, exclude_circle_radius, polygon, offset=(0, 0), stick=False):
         super().__init__(InverseCircle(exclude_circle_center, exclude_circle_radius, polygon), offset, stick)
+        self.drawImage = Surface(self.shape.boundingBox[2:4])
+        draw.polygon(self.drawImage, (255, 255, 255), self.shape.polygon - self.shape.boundingBox[0:2])
+        draw.circle(self.drawImage, (0, 0, 0), (int(self.shape.excludeCircle[1]),
+                                                int(self.shape.excludeCircle[1])),
+                    int(self.shape.excludeCircle[1]))
+        self.drawImage.set_colorkey((0, 0, 0))
 
-    def draw(self, screen, screen_box):
+    def draw(self, screen, screen_box, color):
         if contain(self.boundingBox, screen_box):
-            draw.polygon(screen, (255, 255, 255), self.shape.polygon - screen_box[0:2])
-            draw.circle(screen, (0, 0, 0), self.shape.excludeCircle[0].astype(int) - screen_box[0:2],
-                        int(self.shape.excludeCircle[1]))
+            screen.blit(self.drawImage, self.shape.boundingBox[0:2] - screen_box[0:2])
+            # TODO: Improve Render time

@@ -17,10 +17,13 @@ class maker:
         self.points = [asarray([0, 0])] * 3
         self.currentPoint = 0
         self.stick = True
+        self.grid = True
         self.position = asarray([0, 0])
 
     def update(self, mouse):
-        self.mouse = asarray(mouse) + self.position
+        self.mouse = asarray(mouse) + self.position + asarray((20, 20))
+        self.mouse = floor_divide(self.mouse, 40)
+        self.mouse *= 40
         if self.keymap.get_toggle('r'):
             self.platType = 'Rect'
             self.reset()
@@ -121,6 +124,8 @@ class maker:
 
     def genInverse(self, p1, p2):
         point_dist = int(linalg.norm(p1 - p2))
+        if self.grid:
+            point_dist = (point_dist+20)//40*40
         if p1[0] > p2[0]:
             left = p1[0] - point_dist
         else:
