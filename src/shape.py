@@ -267,7 +267,7 @@ class Polygon(Shape):
                         dif = norm_dif
                         dif_vect = -normal
 
-                if dif <= 0 and dif != - maxEjectionDistance:
+                if (dif <= 0 or cling) and dif != - maxEjectionDistance:
                     return dif, dif_vect
 
             if shape.type == 'Circle':
@@ -328,15 +328,13 @@ class Polygon(Shape):
                 ejection = -1000000, None
                 for point in zip(self.shape, point_dists):
                     if point[1] > radius:
-                        valid_points.append(point[0])
                         if -point[1] > ejection[0]:
                             ejection = -point[1] + radius, point[0] - shape.excludeCircle[0]
 
 
-                valid_points = asfarray(valid_points)
                 polyNormals = get_normals(shape.polygon)
                 for norm in polyNormals:
-                    if not (valid_points @ norm).min() <= (shape.polygon @ norm).max():
+                    if not (self.shape @ norm).min() <= (shape.polygon @ norm).max():
                         return False, None
 
                 # TODO: correct normal calculation, dont' calc point normal

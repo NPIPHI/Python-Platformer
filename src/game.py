@@ -4,17 +4,12 @@ from numpy import asarray, array
 import mapLoader
 
 
-player1 = Player(x=500, y=500, acceleration=0.5)
+player1 = Player(x=500, y=500, acceleration=1)
 entities = list()
 entities.append(player1)
 
 platforms = list()
 platforms += mapLoader.load('Platformer/res/map.txt')
-platforms.append(InverseCirclePlatform((200, 900), 100, (100, 900, 100, 100)))
-platforms.append(InverseCirclePlatform((200, 100), 100, (100, 0, 100, 100)))
-platforms.append(InverseCirclePlatform((1200, 900), 100, (1200, 900, 100, 100)))
-platforms.append(InverseCirclePlatform((1200, 100), 100, (1200, 0, 100, 100)))
-platforms.append(RectanglePlatform((1300, 0, 100, 1000)))
 screenBox: array
 screenDim: array
 
@@ -31,13 +26,30 @@ def game_loop():
 
 
 def game_draw(screen):
-    global screenBox
-    screenBox = screenBox.reshape((2, 2))
-    screenBox += -screenBox[0, 0:2] + player1.pos.astype(int) - (screenDim/2).astype(int)
-    screenBox = screenBox.reshape(4)
+    set_screen_position(player1.pos)
     for p in platforms:
         p.draw(screen, screenBox)
 
     for e in entities:
         e.draw(screen, screenBox)
 
+
+def draw_map(screen):
+    for p in platforms:
+        p.draw(screen, screenBox)
+
+
+def add_platform(platform):
+    platforms.append(platform)
+
+
+def set_screen_position(position, centered=True):
+    global screenBox
+    screenBox = screenBox.reshape((2, 2))
+    if centered:
+        screenBox += -screenBox[0, 0:2] + asarray(position).astype(int) - (screenDim / 2).astype(int)
+
+    else:
+        screenBox += -screenBox[0, 0:2] + asarray(position).astype(int)
+
+    screenBox = screenBox.reshape(4)

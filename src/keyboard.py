@@ -1,7 +1,7 @@
 import pygame
 
 
-allKeys = '''1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./ '''
+allKeys = '''1234567890-=qwertyuiop[]\\asdfghjkl;'zxcvbnm,./\x1b '''
 
 
 class Keyboard:

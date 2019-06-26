@@ -3,8 +3,9 @@ from pygame import draw
 
 
 class Platform(ABC):
-    def __init__(self, shape, offset):
+    def __init__(self, shape, offset, stick):
         self.shape = shape
+        self.stick = stick
         self.shape.translate_absolute(asfarray(offset))
         self.boundingBox = shape.boundingBox
 
@@ -26,8 +27,8 @@ class Platform(ABC):
 
 
 class CirclePlatform(Platform):
-    def __init__(self, center, radius, offset=(0, 0)):
-        super().__init__(Circle(center, radius), offset)
+    def __init__(self, center, radius, offset=(0, 0),  stick=False):
+        super().__init__(Circle(center, radius), offset, stick)
 
     def draw(self, screen, screen_box):
         if contain(self.boundingBox, screen_box):
@@ -36,8 +37,8 @@ class CirclePlatform(Platform):
 
 
 class PolygonPlatform(Platform):
-    def __init__(self, polygon, offset=0):
-        super().__init__(Polygon(polygon), offset)
+    def __init__(self, polygon, offset=0, stick=False):
+        super().__init__(Polygon(polygon), offset, stick)
 
     def draw(self, screen, screen_box):
         if contain(self.boundingBox, screen_box):
@@ -45,16 +46,16 @@ class PolygonPlatform(Platform):
 
 
 class RectanglePlatform(Platform):
-    def __init__(self, rect, offset=(0, 0)):
-        super().__init__(Rectangle(rect), offset)
+    def __init__(self, rect, offset=(0, 0), stick=False):
+        super().__init__(Rectangle(rect), offset, stick)
 
     def draw(self, screen, screen_box):
         draw.polygon(screen, (255, 255, 255), self.shape.shape - screen_box[0:2])
 
 
 class ComboPlatform(Platform):
-    def __init__(self, shapes, offset=(0, 0)):
-        super().__init__(ComboShape(list(map(chose_shape, shapes))), offset)
+    def __init__(self, shapes, offset=(0, 0), stick=False):
+        super().__init__(ComboShape(list(map(chose_shape, shapes))), offset, stick)
 
     def draw(self, screen, screen_box):
         if contain(self.boundingBox, screen_box):
@@ -69,8 +70,8 @@ class ComboPlatform(Platform):
 
 
 class InverseCirclePlatform(Platform):
-    def __init__(self, exclude_circle_center, exclude_circle_radius, polygon, offset=(0, 0)):
-        super().__init__(InverseCircle(exclude_circle_center, exclude_circle_radius, polygon), offset)
+    def __init__(self, exclude_circle_center, exclude_circle_radius, polygon, offset=(0, 0), stick=False):
+        super().__init__(InverseCircle(exclude_circle_center, exclude_circle_radius, polygon), offset, stick)
 
     def draw(self, screen, screen_box):
         if contain(self.boundingBox, screen_box):

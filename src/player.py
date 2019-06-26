@@ -1,6 +1,6 @@
 from entity import Entity
 from keyboard import default_keymap
-from numpy import array, linalg
+from numpy import array, linalg, asfarray
 from pygame import draw
 from shape import *
 import math
@@ -35,8 +35,13 @@ class Player(Entity):
         self.rotationAngle = 0
         self.frictionless = False  # use to apply force to player in high friction states
         self.surfaceCling = False  # weather the player should cling to the clingId surface
+        self.clingNormal = asfarray([0, 0])  # use to decling if the turn is too sharp
         self.clingId = 0
         self.airDrag = 0.01
+        self.walking = False  # weather walking, use to increase friction when not walking
+        self.groundDrag = 0.1
+        self.minimumStickSpeed = 20  # minimum speed to cling to celings
+        self.multiFrameCollisions = 4
 
     def update(self, platforms):
         self.calc_movement()
@@ -45,28 +50,29 @@ class Player(Entity):
         self.pos += self.velocity
         self.groundNormal = asfarray([0, -1])
 
-        if not self.frictionless:
-            if self.wallRide:
-                self.velocity *= 0.20
-            else:
+        if self.grounded:
+            if not self.frictionless:
+                if self.walking:
+                    self.velocity *= 1 - self.airDrag
+                else:
+                    self.velocity *= 1 - self.groundDrag
+
+        else:
+            if not self.frictionless:
                 self.velocity *= 1 - self.airDrag
 
         self.shape.translate_absolute(self.pos)
-        if self.keyMap.get_toggle('r'):
-            if self.keyMap[chr(304)]:
-                self.gravityRotation += math.pi/2
-            else:
-                self.gravityRotation -= math.pi/2
-
         self.frictionless = False
         self.grounded = False
         self.wallRide = False
 
         if self.keyMap['p']:
             breakpoint()
+
         self.calc_intersects(platforms)
 
     def calc_intersects(self, platforms):
+        collided_playforms = 0
         for plat in platforms:
             plat.shape: Shape
             cling = False
@@ -76,8 +82,22 @@ class Player(Entity):
 
             inter = self.shape.intersect(plat.shape, cling)
             if inter[0]:
+                if linalg.norm(self.velocity) < self.minimumStickSpeed:
+                    cling = False
+                    self.surfaceCling = False
+
+                if abs(inter[1] @ self.clingNormal < 0.5):
+                    cling = False
+                    self.surfaceCling = False
+
                 if inter[0] <= 0 or cling:
-                    self.groundNormal = inter[1]
+                    collided_playforms += 1
+                    if collided_playforms == 1:
+                        if plat.stick:
+                            self.set_cling_id(id(plat))
+                            self.clingNormal = inter[1]
+                    if plat.stick:
+                        self.groundNormal = inter[1]
                     self.pos -= inter[0] * inter[1]
 
                     velMag = linalg.norm(self.velocity)
@@ -86,7 +106,7 @@ class Player(Entity):
                     self.velocity -= inter[1] * velDelta
 
                     if abs(velDelta)/velMag < 0.8:
-                        if linalg.norm(self.velocity) > 0.1:
+                        if linalg.norm(self.velocity) > 10:
                             self.velocity /= linalg.norm(self.velocity)
                             self.velocity *= velMag
 
@@ -110,8 +130,12 @@ class Player(Entity):
                         self.rotationAngle *= -1
                     self.shape.rotate_absolute(self.rotationAngle)
 
-                    if cling:
-                        self.set_gravity(self.rotationAngle)
+                    # if cling:
+                    #    self.set_gravity(self.rotationAngle)
+
+        if collided_playforms > 1:
+            self.surfaceCling = False
+            self.groundNormal = asfarray([0, -1])
 
     def calc_movement(self):
         mov_vector = asfarray([0, 0])
@@ -126,6 +150,9 @@ class Player(Entity):
 
         if self.keyMap[DOWN]:
             mov_vector[1] += 1
+
+        if linalg.norm(mov_vector) > 0.1:
+            self.walking = True
 
         groundTangent = asfarray([-self.groundNormal[1], self.groundNormal[0]])
         self.velocity += groundTangent * mov_vector[0] * self.acceleration
@@ -150,7 +177,7 @@ class Player(Entity):
         return "Player at {} with velocity {}".format(self.pos, self.velocity)
 
     def draw(self, screen, screen_box):
-        draw.polygon(screen, (255, 255, 0), self.shape.shape - screen_box[0:2])
+        draw.polygon(screen, (0, 0x91, 0xe4), self.shape.shape - screen_box[0:2])
         draw.polygon(screen, (0, 255, 0) if self.grounded else (255, 0, 0), gravityArrow @ self.gravityTransform * 50 + asfarray([500, 100]))
 
     def set_cling_id(self, cling_id):
