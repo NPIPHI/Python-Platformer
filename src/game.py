@@ -2,6 +2,7 @@ from player import Player
 from mapElements import *
 from numpy import asarray, array
 import mapLoader
+from random import randint
 
 
 player1 = Player(x=500, y=500, acceleration=1)
@@ -28,13 +29,17 @@ def game_loop():
 def game_draw(screen):
     set_screen_position(player1.pos)
     for p in platforms:
-        p.draw(screen, screenBox, (255, 255, 255))
+        if p.kill:
+            p.draw(screen, screenBox, (255, 0, 0))
+        else:
+            p.draw(screen, screenBox, (255, 255, 255))
 
     for e in entities:
         e.draw(screen, screenBox)
 
 
 def draw_map(screen):
+    player1.pos = screenBox[0:2].astype(float)
     for p in platforms:
         if p.stick:
             p.draw(screen, screenBox, (255, 255, 255))

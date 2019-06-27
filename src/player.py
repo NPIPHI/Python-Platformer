@@ -39,17 +39,25 @@ class Player(Entity):
         self.clingId = 0
         self.airDrag = 0.01
         self.walking = False  # weather walking, use to increase friction when not walking
-        self.groundDrag = 0.1
+        self.groundDrag = 0.2
         self.minimumStickSpeed = 20  # minimum speed to cling to celings
         self.multiFrameCollisions = 4
 
     def update(self, platforms):
         self.calc_movement()
-        self.velocity += self.gravity
-        self.velocity -= self.groundNormal / 100
-        self.pos += self.velocity
-        self.groundNormal = asfarray([0, -1])
+        self.frictionless = False
+        self.grounded = False
+        self.wallRide = False
 
+        for i in range(self.multiFrameCollisions):
+            self.velocity += self.gravity / self.multiFrameCollisions
+            self.velocity -= self.groundNormal / 100
+            self.pos += self.velocity / self.multiFrameCollisions
+            self.shape.translate_absolute(self.pos)
+            self.calc_intersects(platforms)
+
+        self.groundNormal = self.groundNormal * 0.9 + asfarray([0, -1]) * 0.1
+        self.groundNormal /= linalg.norm(self.groundNormal)
         if self.grounded:
             if not self.frictionless:
                 if self.walking:
@@ -61,15 +69,6 @@ class Player(Entity):
             if not self.frictionless:
                 self.velocity *= 1 - self.airDrag
 
-        self.shape.translate_absolute(self.pos)
-        self.frictionless = False
-        self.grounded = False
-        self.wallRide = False
-
-        if self.keyMap['p']:
-            breakpoint()
-
-        self.calc_intersects(platforms)
 
     def calc_intersects(self, platforms):
         collided_playforms = 0
@@ -91,6 +90,8 @@ class Player(Entity):
                     self.surfaceCling = False
 
                 if inter[0] <= 0 or cling:
+                    if plat.kill:
+                        self.die()
                     collided_playforms += 1
                     if collided_playforms == 1:
                         if plat.stick:
@@ -154,6 +155,8 @@ class Player(Entity):
         if linalg.norm(mov_vector) > 0.1:
             self.walking = True
 
+        # mov_vector /= self.multiFrameCollisions
+
         groundTangent = asfarray([-self.groundNormal[1], self.groundNormal[0]])
         self.velocity += groundTangent * mov_vector[0] * self.acceleration
 
@@ -183,3 +186,6 @@ class Player(Entity):
     def set_cling_id(self, cling_id):
         self.clingId = cling_id
         self.surfaceCling = True
+
+    def die(self):
+        quit()

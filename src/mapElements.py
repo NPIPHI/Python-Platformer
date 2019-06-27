@@ -3,7 +3,8 @@ from pygame import draw, Surface
 
 
 class Platform(ABC):
-    def __init__(self, shape, offset, stick):
+    def __init__(self, shape, offset, stick, kill):
+        self.kill = kill
         self.shape = shape
         self.stick = stick
         self.shape.translate_absolute(asfarray(offset))
@@ -27,8 +28,8 @@ class Platform(ABC):
 
 
 class CirclePlatform(Platform):
-    def __init__(self, center, radius, offset=(0, 0),  stick=False):
-        super().__init__(Circle(center, radius), offset, stick)
+    def __init__(self, center, radius, offset=(0, 0),  stick=False, kill=False):
+        super().__init__(Circle(center, radius), offset, stick, kill)
 
     def draw(self, screen, screen_box, color):
         if contain(self.boundingBox, screen_box):
@@ -37,8 +38,8 @@ class CirclePlatform(Platform):
 
 
 class PolygonPlatform(Platform):
-    def __init__(self, polygon, offset=0, stick=False):
-        super().__init__(Polygon(polygon), offset, stick)
+    def __init__(self, polygon, offset=0, stick=False, kill=False):
+        super().__init__(Polygon(polygon), offset, stick, kill)
 
     def draw(self, screen, screen_box, color):
         if contain(self.boundingBox, screen_box):
@@ -46,16 +47,16 @@ class PolygonPlatform(Platform):
 
 
 class RectanglePlatform(Platform):
-    def __init__(self, rect, offset=(0, 0), stick=False):
-        super().__init__(Rectangle(rect), offset, stick)
+    def __init__(self, rect, offset=(0, 0), stick=False, kill=False):
+        super().__init__(Rectangle(rect), offset, stick, kill)
 
     def draw(self, screen, screen_box, color):
         draw.polygon(screen, color, self.shape.shape - screen_box[0:2])
 
 
 class ComboPlatform(Platform):
-    def __init__(self, shapes, offset=(0, 0), stick=False):
-        super().__init__(ComboShape(list(map(chose_shape, shapes))), offset, stick)
+    def __init__(self, shapes, offset=(0, 0), stick=False, kill=False):
+        super().__init__(ComboShape(list(map(chose_shape, shapes))), offset, stick, kill)
 
     def draw(self, screen, screen_box, color):
         if contain(self.boundingBox, screen_box):
@@ -70,9 +71,10 @@ class ComboPlatform(Platform):
 
 
 class InverseCirclePlatform(Platform):
-    def __init__(self, exclude_circle_center, exclude_circle_radius, polygon, offset=(0, 0), stick=False):
-        super().__init__(InverseCircle(exclude_circle_center, exclude_circle_radius, polygon), offset, stick)
-        self.drawImage = Surface(self.shape.boundingBox[2:4])
+    def __init__(self, exclude_circle_center, exclude_circle_radius, polygon, offset=(0, 0), stick=False, kill=False):
+        super().__init__(InverseCircle(exclude_circle_center, exclude_circle_radius, polygon), offset, stick, kill)
+        self.drawImage = Surface((self.shape.boundingBox[2] - self.shape.boundingBox[0],
+                                  self.shape.boundingBox[3] - self.shape.boundingBox[1]))
         draw.polygon(self.drawImage, (255, 255, 255), self.shape.polygon - self.shape.boundingBox[0:2])
         draw.circle(self.drawImage, (0, 0, 0), (int(self.shape.excludeCircle[1]),
                                                 int(self.shape.excludeCircle[1])),
