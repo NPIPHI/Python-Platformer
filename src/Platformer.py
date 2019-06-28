@@ -50,12 +50,6 @@ def main():
 
         frame_count += 1
         screen.fill(screenColor)
-        screenColor[0] += randint(-1, 1)
-        screenColor[1] += randint(-1, 1)
-        screenColor[2] += randint(-1, 1)
-        screenColor[0] %= 255
-        screenColor[1] %= 255
-        screenColor[2] %= 255
 
         if playMode == 'Play':
             game_loop()

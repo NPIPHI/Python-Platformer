@@ -41,6 +41,10 @@ class maker:
             self.platType = 'Poly'
             self.reset()
 
+        if self.keymap.get_toggle('f'):
+            self.platType = 'Fall'
+            self.reset()
+
         if self.keymap.get_toggle(chr(27)):
             self.reset()
 
@@ -72,6 +76,16 @@ class maker:
         if self.platType == 'Rect':
             if self.currentPoint == 2:
                 self.addPlatform('RectanglePlatform((%d, %d, %d, %d), stick=%s, kill=%s)'
+                                 % (min(self.points[0][0], self.points[1][0]),
+                                    min(self.points[0][1], self.points[1][1]),
+                                    abs(self.points[0][0] - self.points[1][0]),
+                                    abs(self.points[0][1] - self.points[1][1]),
+                                    str(self.stick), str(self.kill)))
+                self.reset()
+
+        if self.platType == 'Fall':
+            if self.currentPoint == 2:
+                self.addPlatform('FallingPlatform((%d, %d, %d, %d), stick=%s, kill=%s)'
                                  % (min(self.points[0][0], self.points[1][0]),
                                     min(self.points[0][1], self.points[1][1]),
                                     abs(self.points[0][0] - self.points[1][0]),
@@ -111,8 +125,17 @@ class maker:
                     (self.screen_dim[0] * 0.85, self.screen_dim[1] * 0.2, 200, 50))
         screen.blit(myFont.render('sticky' if self.stick else 'not sticky', True, (255, 255, 255)),
                     (self.screen_dim[0] * 0.85, self.screen_dim[1] * 0.3, 200, 50))
+        screen.blit(myFont.render('kills' if self.kill else 'doesn\'t kill', True, (255, 255, 255)),
+                    (self.screen_dim[0] * 0.85, self.screen_dim[1] * 0.4, 200, 50))
 
         if self.platType == 'Rect':
+            if self.currentPoint == 1:
+                pygame.draw.rect(screen, (255, 255, 0), (self.points[0][0] - self.position[0],
+                                                         self.points[0][1] - self.position[1],
+                                                         self.mouse[0] - self.points[0][0],
+                                                         self.mouse[1] - self.points[0][1]))
+
+        if self.platType == 'Fall':
             if self.currentPoint == 1:
                 pygame.draw.rect(screen, (255, 255, 0), (self.points[0][0] - self.position[0],
                                                          self.points[0][1] - self.position[1],

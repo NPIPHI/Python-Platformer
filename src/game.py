@@ -25,11 +25,16 @@ def game_loop():
     for e in entities:
         e.update(platforms)
 
+    for p in platforms:
+        p.update(player1)
+
 
 def game_draw(screen):
     set_screen_position(player1.pos)
     for p in platforms:
-        if p.kill:
+        if p.win:
+            p.draw(screen, screenBox, (255, 255, 0))
+        elif p.kill:
             p.draw(screen, screenBox, (255, 0, 0))
         else:
             p.draw(screen, screenBox, (255, 255, 255))
@@ -41,7 +46,9 @@ def game_draw(screen):
 def draw_map(screen):
     player1.pos = screenBox[0:2].astype(float)
     for p in platforms:
-        if p.stick:
+        if p.kill:
+            p.draw(screen, screenBox, (255, 0, 0))
+        elif p.stick:
             p.draw(screen, screenBox, (255, 255, 255))
         else:
             p.draw(screen, screenBox, (128, 255, 255))

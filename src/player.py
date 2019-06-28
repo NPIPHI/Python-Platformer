@@ -39,7 +39,7 @@ class Player(Entity):
         self.clingId = 0
         self.airDrag = 0.01
         self.walking = False  # weather walking, use to increase friction when not walking
-        self.groundDrag = 0.2
+        self.groundDrag = 0.5
         self.minimumStickSpeed = 20  # minimum speed to cling to celings
         self.multiFrameCollisions = 4
 
@@ -90,8 +90,13 @@ class Player(Entity):
                     self.surfaceCling = False
 
                 if inter[0] <= 0 or cling:
+                    plat.touch()
                     if plat.kill:
                         self.die()
+
+                    if plat.win:
+                        self.win()
+
                     collided_playforms += 1
                     if collided_playforms == 1:
                         if plat.stick:
@@ -111,6 +116,7 @@ class Player(Entity):
                             self.velocity /= linalg.norm(self.velocity)
                             self.velocity *= velMag
 
+                    self.velocity += asfarray(plat.mov)
                     if inter[1] @ self.groundNormal > self.groundMinVerticalNormal:
                         self.grounded = True
 
@@ -188,4 +194,7 @@ class Player(Entity):
         self.surfaceCling = True
 
     def die(self):
-        quit()
+        self.pos = asfarray([500, 500])
+
+    def win(self):
+        self.pos = asfarray([-1500, 0])
